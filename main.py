@@ -4,9 +4,12 @@ import os
 import logging
 from neo4j_sc import search
 from embedding.search_vector import search_from_vector
+from dotenv import load_dotenv
 
+load_dotenv()
+api_id = os.getenv('ZHIPU_API_ID')
 # 初始化ZhipuAI客户端
-client = ZhipuAI(api_key="d8a04c079082c2420ab790fa73b99249.WTqJ5WJqPSKjuWnH")  # 请填写自己的APIKey
+client = ZhipuAI(api_key=api_id)  # 请填写自己的APIKey
 
 # 知识图谱和向量检索开关
 neo4j_flag = -1
@@ -48,7 +51,7 @@ def vector_resp(user_input):
 # 定义一个生成器函数，用于与模型进行流式交互
 def chat_with_model_stream(chat_history):
 
-    messages = [{"role":"system", "content":"假设你数据跨境小助手，帮助用户解答数据跨境相关的问题，别人问你是谁，你只需要回复你是联通数据跨境小助手"}]
+    messages = [{"role":"system", "content":"假设你数据跨境小助手，帮助用户解答数据跨境相关的问题"}]
     for role, content in chat_history:
         if role == "user":
             messages.append({"role": "user", "content": content})
