@@ -1,0 +1,9 @@
+faiss-cpu 
+neo4j
+zhipuai
+numpy
+pandas
+jieba
+pandas
+py2neo
+python-dotenv
