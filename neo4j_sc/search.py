@@ -3,6 +3,7 @@ from py2neo import  ConnectionUnavailable
 from neo4j import GraphDatabase
 import pandas as pd
 import os 
+from difflib import SequenceMatcher
 current_dir = os.getcwd()  
 
 # 定义关键词CSV文件的相对路径
@@ -62,18 +63,48 @@ def search_paragraphs_by_keyword(keyword_name):
             paragraph_list.append(record["paragraph_text"])
     return ';'.join(paragraph_list)
 
-def search_from_neo4j(user_input, country): 
-    country_flag = False 
+# def search_from_neo4j(user_input, country): 
+#     country_flag = False 
+#     if len(country) > 1:
+#         country_flag = True
+#     keywords = jieba.lcut(user_input)
+#     hit_keywords_content = {}
+#     for keyword in keywords:
+#         if len(keyword) > 1 and  keyword in keyword_dict:
+#                 if country_flag:
+#                     content_from_neo4j = search_paragraphs_by_country_and_keyword(keyword_name=keyword, country_name=country)
+#                     hit_keywords_content[keyword] = content_from_neo4j
+#                 else:
+#                     content_from_neo4j = search_paragraphs_by_keyword(keyword_name=keyword)
+#                     hit_keywords_content[keyword] = content_from_neo4j
+#     return hit_keywords_content
+
+thresholds = 0.5
+
+def search_from_neo4j(user_input, country):
+    country_flag = False
     if len(country) > 1:
         country_flag = True
+    
     keywords = jieba.lcut(user_input)
     hit_keywords_content = {}
+
     for keyword in keywords:
-        if len(keyword) > 1 and  keyword in keyword_dict:
+        if len(keyword) > 1:
+            # 找到与当前keyword相似度超过阈值的keyword_dict中的key
+            similar_keywords = [(key, SequenceMatcher(None, keyword, key).ratio()) for key in keyword_dict.keys() if SequenceMatcher(None, keyword, key).ratio() > thresholds]
+            
+            if similar_keywords:
+                # 找到相似度最高的key
+                best_match = max(similar_keywords, key=lambda x: x[1])
+                best_keyword = best_match[0]
+                
                 if country_flag:
-                    content_from_neo4j = search_paragraphs_by_country_and_keyword(keyword_name=keyword, country_name=country)
+                    content_from_neo4j = search_paragraphs_by_country_and_keyword(keyword_name=best_keyword, country_name=country)
                     hit_keywords_content[keyword] = content_from_neo4j
                 else:
-                    content_from_neo4j = search_paragraphs_by_keyword(keyword_name=keyword)
+                    content_from_neo4j = search_paragraphs_by_keyword(keyword_name=best_keyword)
                     hit_keywords_content[keyword] = content_from_neo4j
+
     return hit_keywords_content
+
