@@ -5,6 +5,7 @@ import logging
 from neo4j_sc import search
 from embedding.search_vector import search_from_vector
 from dotenv import load_dotenv
+from difflib import SequenceMatcher
 
 load_dotenv()
 api_id = os.getenv('ZHIPU_API_ID')
@@ -23,6 +24,26 @@ def is_country(content):
             return c 
     return ''
 
+# def neo4j_resp(user_input, country):
+#     input_country = is_country(user_input)
+#     if input_country != '':
+#         country = input_country
+    
+#     neo4j_content = ''
+    
+#     neo4j_content_dict = search.search_from_neo4j(user_input=user_input, country=country)
+    
+#     if len(neo4j_content_dict) > 0:
+#         if len(country) > 0:
+#             neo4j_content = f'知识图谱提供的关于{country}在这个问题上的背景知识：'
+#         else:
+#             neo4j_content = f'知识图谱提供的背景知识：'
+#         for k, v in neo4j_content_dict.items():
+#             neo4j_content += k + ':' + v + '\n'
+    
+#     logging.info(f"neo4j resp:{neo4j_content}")
+#     return neo4j_content
+
 def neo4j_resp(user_input, country):
     input_country = is_country(user_input)
     if input_country != '':
@@ -37,11 +58,19 @@ def neo4j_resp(user_input, country):
             neo4j_content = f'知识图谱提供的关于{country}在这个问题上的背景知识：'
         else:
             neo4j_content = f'知识图谱提供的背景知识：'
-        for k, v in neo4j_content_dict.items():
+        
+        # 计算每个 value 与 user_input 的相似度
+        similarity_scores = [(k, v, SequenceMatcher(None, user_input, v).ratio()) for k, v in neo4j_content_dict.items()]
+        
+        # 按相似度排序并选择前 3 个
+        top_related_content = sorted(similarity_scores, key=lambda x: x[2], reverse=True)[:3]
+        
+        for k, v, _ in top_related_content:
             neo4j_content += k + ':' + v + '\n'
     
     logging.info(f"neo4j resp:{neo4j_content}")
     return neo4j_content
+
 
 def vector_resp(user_input):
     vector_content = search_from_vector(user_input, k=3)
